@@ -1,0 +1,22 @@
+{
+  "name": "ethersync",
+  "version": "0.0.0",
+  "description": "write any file in an etherpad, automatically download to file",
+  "main": "ethersync.coffee",
+  "scripts": {
+    "start": "./ethersync.coffee",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "",
+  "keywords": [
+    "etherpad",
+    "sync"
+  ],
+  "author": "payload",
+  "license": "AGPLv3+",
+  "dependencies": {
+    "coffee-script": "*",
+    "node-getopt": "*",
+    "socket.io-client": "*"
+  }
+}
