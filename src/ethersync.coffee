@@ -1,4 +1,4 @@
-#!./node_modules/coffee-script/bin/coffee
+#!/usr/bin/env coffee
 io      = require 'socket.io-client'
 request = require 'request'
 https   = require 'https'
