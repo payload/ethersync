@@ -19,53 +19,58 @@ main = ->
   me = Path.basename me, Path.extname me
 
   defaults =
-    host  : "http://127.0.0.1:9001/"
+    host  : "http://beta.etherpad.org/"
     pad   : randomString 10
-    path  : me+'.txt'
-    secure: false
+    file  : me+'.txt'
+    secure: true
 
-  for arg in process.argv[2..]
-    if arg in ['--help', '-h']
-      help(me)
-    else if arg in ['--version', '-V']
-      version()
+  opt = getopt.create [
+    ['p', 'pad=PAD'   , ""]
+    ['f', 'file=FILE' , ""]
+    ['H', 'host=HOST' , ""]
+    ['' , 'insecure'  , ""]
+    ['h', 'help'      , "show this help"]
+    ['v', 'version'   , "show the version"]
+  ]
+  opt.bindHelp()
+  opt.parseSystem()
+  
+  { argv, options: opts } = opt.parsedOption
+  
+  pad  = opts.pad or argv[0] or defaults.pad
+  file = opts.file or argv[1] or defaults.file
+  url  = Url.parse pad
+  if url.host
+    pad  = url.pathname.split('/')[-1..][0]
+    url.protocol ?= 'http'
+    host = Url.format url
+  if opts.host
+    url = Url.parse opts.host
+    url.protocol ?= 'http'
+    host = Url.format url
+  else
+    host or= defaults.host
+  host = Url.resolve host, "/"
+  secure = !opts.insecure
+  secure ?= defaults.secure
 
-  [ path, pad, host, secure ] = process.argv[2..]
-  path   or= defaults.path
-  pad    or= defaults.pad
-  host   or= defaults.host
-  secure or= defaults.secure
-  { pathname, href } = url = Url.parse pad
-  if pathname != href
-    pad  = pathname.split('/')[-1..]
-    host = (url.protocol or 'http') + '//' + url.host + '/'
-  url = Url.parse host
-  host = (url.protocol or 'http') + '//' + url.host + '/'
-  opts = { host, pad, path, secure }
+  opts = { host, pad, file }
   
   https.globalAgent.options.rejectUnauthorized = !opts.secure
   ethersync = new EtherSync opts
   ethersync.openPad()
 
-help = (me) ->
-  P "Usage: #{process.argv[0]} #{process.argv[1]} [-hV] [PATH] [PAD] [HOST] [SECURE]"
-  P ""
-  P "PATH defaults to #{me}.txt"
-  P "PAD  defaults to a random string"
-  P "HOST defaults to #{defaultHost}"
-  P "SECURE defaults to false"
-  process.exit 0
-  
 version = ->
   P "ethersync 0.0.0"
+  process.exit 0
 
 class EtherSync
 
-  constructor: ({ @path, @pad, @host }={}) ->
+  constructor: ({ @file, @pad, @host }={}) ->
     @timer  = null
     @rev    = -1
     @socket = null
-    try @text   = ""+fs.readFileSync @path
+    try @text   = ""+fs.readFileSync @file
     catch err
       @text = ""
 
@@ -90,18 +95,22 @@ class EtherSync
     switch msg.type
       when 'CLIENT_VARS'
         vars = msg.data?.collab_client_vars
-        text = vars?.initialAttributedText?.text[...-1]
+        text = vars?.initialAttributedText?.text
         if @rev != vars.rev
-          @rev = vars.rev
-          if @rev == 0
-            @pushFile text
+          if vars.rev == 0 or @text and not text[...-1]
+            @pushFile text, vars.rev
+            @rev = vars.rev+1
+            P "pushes file"
           else if @text and text and @text != text
             @fileAndPadNotEmpty()
-          else
+          else if not @text+'\n' and text
             @writeFile text
+            @rev = vars.rev
+            P "writes file"
       when 'COLLABROOM'
         { type, newRev, changeset } = msg.data
         if type == 'NEW_CHANGES' and newRev > @rev
+          P 'sync'
           @rev = newRev
           # XXX there is an off-by-one-error and
           # I don't know who is inserting or missing a newline
@@ -113,29 +122,30 @@ class EtherSync
         P msg
   
   fileAndPadNotEmpty: =>
-    util.error """Oh no!
+    util.error """
+    Oh no!
     
     Your file and the pad is not empty. You could loose data
     somewhere, so I stopped and let you fix the situation. Make the file or the
     pad empty, give me another filer or pad or whatever."""
     process.exit 1
   
-  pushFile: (oldText) =>
+  pushFile: (oldText, baseRev) =>
     cs = Changeset.makeSplice oldText, 0, oldText.length, @text, '', null
     @socket.json.send
       component     : "pad"
       type          : "COLLABROOM"
       data          :
         type        : "USER_CHANGES"
-        baseRev     : 0
+        baseRev     : baseRev
         changeset   : cs
         apool       :
           numToAttrib: { 0: [ "author", "a."+randomString(16) ] }
           nextNum    : 1
   
   writeFile: (text) =>
-    fs.stat @path, (err, stat) =>
-      fs.writeFile @path, text, mode: stat?.mode, (err) =>
+    fs.stat @file, (err, stat) =>
+      fs.writeFile @file, text, mode: stat?.mode, (err) =>
         return if err
         @text = text
   
