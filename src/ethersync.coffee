@@ -19,7 +19,7 @@ main = ->
   me = Path.basename me, Path.extname me
 
   defaults =
-    host  : "http://beta.etherpad.org/"
+    host  : "https://pad.riseup.net/"
     pad   : randomString 10
     file  : me+'.txt'
     secure: true
@@ -37,8 +37,8 @@ main = ->
   
   { argv, options: opts } = opt.parsedOption
   
-  pad  = opts.pad or argv[0] or defaults.pad
-  file = opts.file or argv[1] or defaults.file
+  file = opts.file or argv[0] or defaults.file
+  pad  = opts.pad or argv[1] or defaults.pad
   url  = Url.parse pad
   if url.host
     pad  = url.pathname.split('/')[-1..][0]
@@ -61,7 +61,7 @@ main = ->
   ethersync.openPad()
 
 version = ->
-  P "ethersync 0.0.0"
+  P "ethersync 1.0.0"
   process.exit 0
 
 class EtherSync
@@ -160,9 +160,8 @@ class EtherSync
       protocolVersion : 2
 
 patchSocketIo = ->
-  mod = require('socket.io-client/node_modules/xmlhttprequest')
-  XMLHttpRequestOrig = mod.XMLHttpRequest
-  mod.XMLHttpRequest = ->
+  XMLHttpRequestOrig = require('xmlhttprequest').XMLHttpRequest
+  XMLHttpRequest = ->
     XMLHttpRequestOrig.apply this, arguments
     @setDisableHeaderCheck true
     openOrig = @open
@@ -173,6 +172,7 @@ patchSocketIo = ->
       ).join "; "
       @setRequestHeader 'cookie', header
     return
+  require('socket.io-client/node_modules/xmlhttprequest').XMLHttpRequest = XMLHttpRequest
   
 randomString = (len) ->
   len ?= 20

@@ -1,13 +1,15 @@
 {
   "name": "ethersync",
-  "version": "0.0.0",
-  "description": "write any file in an etherpad, automatically download to file",
-  "main": "ethersync.coffee",
+  "version": "1.0.0",
+  "description": "Push any file to an etherpad and edit it collaborativly. Changes in the pad get refelected in the file instantly.",
+  "homepage": "https://github.com/payload/ethersync",
+  "main": "./ethersync",
+  "bin" : "./ethersync",
   "scripts": {
-    "start": "./ethersync.coffee",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start"      : "./ethersync",
+    "test"       : "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": "",
+  "repository": "git://github.com/payload/ethersync.git",
   "keywords": [
     "etherpad",
     "sync"
@@ -15,8 +17,13 @@
   "author": "payload",
   "license": "AGPLv3+",
   "dependencies": {
-    "coffee-script": "*",
-    "node-getopt": "*",
-    "socket.io-client": "*"
-  }
+    "coffee-script"   : "~1.6.2",
+    "node-getopt"     : "~0.2.3",
+    "socket.io-client": "~0.9.11",
+    "request"         : "~2.16.6",
+    "xmlhttprequest"  : "~1.5.0"
+  },
+  "bugs": {
+    "url": "https://github.com/payload/ethersync/issues"
+	}
 }
