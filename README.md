@@ -1,6 +1,6 @@
 # ethersync
 
-Push any file to an etherpad and edit it collaborativly. Changes in the pad get refelected in the file instantly.
+NOT STABLE YET. Push any file to an etherpad and edit it collaborativly. Changes in the pad get refelected in the file instantly.
 
 ## Install
 
